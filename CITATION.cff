@@ -1,0 +1,71 @@
+cff-version: 1.2.0
+title: "teakit: techno-economic analysis of chemical process plants"
+message: "If you use teakit in published work, please cite the article under preferred-citation, and cite the underlying DOE/NETL and NREL sources it implements."
+type: software
+version: 2.0.0
+date-released: 2026-08-18
+license-url: "https://polyformproject.org/licenses/noncommercial/1.0.0"
+abstract: >-
+  A dependency-free Python library and graphical application for the
+  techno-economic analysis of chemical process plants. Implements the DOE/NETL
+  capital cost cascade (BEC to TASC), 42 equipment cost correlations regressed
+  from DOE/NETL-2002/1169 Appendix B, CEPCI escalation, factored operating cost
+  models, byproduct allocation, three levelised-cost methods including an
+  after-tax discounted cash flow solved for minimum selling price, and
+  sensitivity analysis by tornado, sweep, Monte Carlo and breakeven.
+keywords:
+  - techno-economic analysis
+  - process economics
+  - cost estimation
+  - chemical engineering
+  - levelized cost
+  - discounted cash flow
+repository-code: "https://github.com/alotfi73/teakit"
+url: "https://github.com/alotfi73/teakit"
+authors:
+  - family-names: "Lotfollahzade Moghaddam"
+    given-names: "A."
+preferred-citation:
+  type: article
+  title: "Molten metal methane pyrolysis for distributed hydrogen production: Reactor design, hydrodynamics, and technoeconomic insights"
+  authors:
+    - family-names: "Lotfollahzade Moghaddam"
+      given-names: "A."
+    - family-names: "Hejazi"
+      given-names: "S."
+    - family-names: "Fattahi"
+      given-names: "M."
+    - family-names: "Kibria"
+      given-names: "M."
+    - family-names: "Khan"
+      given-names: "M. A."
+  journal: "Chemical Engineering Journal"
+  year: 2025
+  doi: "10.1016/j.cej.2025.169812"
+  url: "https://doi.org/10.1016/j.cej.2025.169812"
+references:
+  - type: report
+    title: "Quality Guidelines for Energy System Studies: Cost Estimation Methodology for NETL Assessments of Power Plant Performance"
+    institution: { name: "National Energy Technology Laboratory" }
+    number: "NETL-PUB-22580"
+    year: 2021
+  - type: report
+    title: "Process Equipment Cost Estimation, Final Report"
+    authors:
+      - family-names: "Loh"
+        given-names: "H. P."
+      - family-names: "Lyons"
+        given-names: "Jennifer"
+      - family-names: "White"
+        given-names: "Charles W."
+    institution: { name: "National Energy Technology Laboratory" }
+    number: "DOE/NETL-2002/1169"
+    year: 2002
+  - type: report
+    title: "Process Design and Economics for Biochemical Conversion of Lignocellulosic Biomass to Ethanol"
+    authors:
+      - family-names: "Humbird"
+        given-names: "D."
+    institution: { name: "National Renewable Energy Laboratory" }
+    number: "NREL/TP-5100-47764"
+    year: 2011

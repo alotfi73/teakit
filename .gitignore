@@ -1,0 +1,30 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+.venv/
+venv/
+env/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.DS_Store
+*.swp
+.idea/
+.vscode/
+*.teakit.json
+*-report.html
+*-report.md
+*.svg
+!docs/**/*.svg
+# Logo artwork is source, not chart output.
+!teakit-logo/*.svg
+!src/teakit/app/static/*.svg
+
+# The default output folder for the application (teakit.app.workspace).
+reports/
