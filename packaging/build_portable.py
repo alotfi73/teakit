@@ -25,6 +25,7 @@ import argparse
 import os
 import shutil
 import sys
+import tarfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -163,6 +164,36 @@ the finished number, not a local-content estimate.
 """
 
 
+#: Launchers that have to arrive executable on macOS and Linux.
+EXECUTABLE = ("Launch teakit.command", "launch-teakit.sh")
+
+
+def _tar_gz(folder: str) -> str:
+    """
+    Pack ``folder`` with the shell launchers marked executable.
+
+    Windows has no executable bit, so ``os.chmod`` there is a no-op and an
+    archive built from it ships a ``.command`` that macOS will not open on a
+    double-click and a ``.sh`` that Linux refuses to run. Setting the mode in
+    the archive rather than on disk makes the bundle identical whichever
+    platform builds it. Ownership is zeroed for the same reason, and so the
+    builder's username does not travel with the download.
+    """
+    base = os.path.basename(folder)
+    out = f"{folder}.tar.gz"
+
+    def normalise(info: tarfile.TarInfo) -> tarfile.TarInfo:
+        rel = info.name[len(base) + 1:]
+        info.mode = 0o755 if info.isdir() or rel in EXECUTABLE else 0o644
+        info.uid = info.gid = 0
+        info.uname = info.gname = ""
+        return info
+
+    with tarfile.open(out, "w:gz") as tf:
+        tf.add(folder, arcname=base, filter=normalise)
+    return out
+
+
 def _version() -> str:
     sys.path.insert(0, os.path.join(ROOT, "src"))
     import teakit
@@ -206,12 +237,12 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"Built {final}")
     if args.zip:
-        # zipfile does not preserve the executable bit; on macOS the .command
-        # launcher must stay executable, so use a tar.gz there as well.
+        # zip cannot carry an executable bit at all; on macOS the .command
+        # launcher must have one, so ship the tar.gz there.
         archive = shutil.make_archive(final, "zip", DIST, os.path.basename(final))
         print(f"Packed {archive}")
-        tar = shutil.make_archive(final, "gztar", DIST, os.path.basename(final))
-        print(f"Packed {tar}  (preserves the executable bit — prefer this for macOS)")
+        tar = _tar_gz(final)
+        print(f"Packed {tar}  (executable launchers — prefer this for macOS)")
     return 0
 
 
