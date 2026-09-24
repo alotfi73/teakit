@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>teakit</title>
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0F2F57"/><stop offset="0.55" stop-color="#0C4A6B"/><stop offset="1" stop-color="#0B7A75"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.15" r="0.65">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.14"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="amber" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#FF6B3D"/><stop offset="1" stop-color="#FFC24B"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#tile)"/>
+  <rect width="512" height="512" rx="112" fill="url(#glow)"/>
+  <!-- axes: cost vs design variable -->
+  <path d="M80 84 V428 H436" fill="none" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- the plant: a distillation column sitting at the optimum -->
+  <path d="M218 318 V140 C218 112 306 112 306 140 V318 Z" fill="url(#amber)"/>
+  <!-- total cost: the U -->
+  <path d="M106 92 C136 290 196 322 262 322 C334 322 392 282 432 196" fill="none" stroke="#FFFFFF" stroke-width="40" stroke-linecap="round"/>
+  <!-- the optimum -->
+  <circle cx="262" cy="322" r="38" fill="#FFC24B" stroke="#0F2F57" stroke-width="12"/>
+  
+</svg>

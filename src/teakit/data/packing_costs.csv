@@ -1,0 +1,34 @@
+packing_type,nominal_size_in,cost_usd_per_ft3_1998Q1
+pall rings polypropylene,0.5,33
+pall rings polypropylene,1.0,29
+pall rings polypropylene,1.5,21
+pall rings polypropylene,2.0,8
+pall rings stainless,0.5,130
+pall rings stainless,1.0,118
+pall rings stainless,1.5,92
+pall rings stainless,2.0,76
+intalox saddles ceramic,0.5,31
+intalox saddles ceramic,1.0,28
+intalox saddles ceramic,1.5,23
+intalox saddles ceramic,2.0,21
+intalox saddles porcelain,0.5,32
+intalox saddles porcelain,1.0,29
+intalox saddles porcelain,1.5,24
+intalox saddles porcelain,2.0,21
+raschig rings ceramic,0.5,119
+raschig rings ceramic,1.0,14
+raschig rings ceramic,1.5,12
+raschig rings ceramic,2.0,12
+raschig rings ceramic,3.0,11
+raschig rings porcelain,1.0,17
+raschig rings porcelain,1.5,15
+raschig rings porcelain,2.0,12
+raschig rings porcelain,3.0,11
+raschig rings stainless,1.0,111
+raschig rings stainless,1.5,94
+raschig rings stainless,2.0,59
+raschig rings stainless,3.0,54
+raschig rings carbon steel,1.0,37
+raschig rings carbon steel,1.5,31
+raschig rings carbon steel,2.0,20
+raschig rings carbon steel,3.0,18

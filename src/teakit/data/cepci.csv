@@ -1,0 +1,57 @@
+year,quarter,month,cepci,status,note
+1964,,,103.0,published,
+1965,,,104.0,published,
+1970,,,126.0,published,
+1975,,,182.0,published,
+1980,,,261.0,published,
+1985,,,325.0,published,
+1990,,,357.6,published,
+1995,,,381.1,published,
+1996,,,381.8,published,
+1997,,,386.5,published,
+1998,,,389.5,published,
+1999,,,390.6,published,
+2000,,,394.1,published,
+2001,,,394.3,published,
+2002,,,395.6,published,
+2003,,,402.0,published,
+2004,,,444.2,published,
+2005,,,468.2,published,
+2006,,,499.6,published,
+2007,,,525.4,published,
+2008,,,575.4,published,
+2009,,,521.9,published,
+2010,,,550.8,published,
+2011,,,585.7,published,
+2012,,,584.6,published,
+2013,,,567.3,published,
+2014,,,576.1,published,
+2015,,,556.8,published,
+2016,,,541.7,published,
+2017,,,567.5,published,
+2018,,,603.1,published,
+2019,,,607.5,published,
+2020,,,596.2,published,
+2021,,,708.8,published,
+2022,,,816.0,published,
+2023,,,797.9,published,
+2024,,,797.5,PROVISIONAL,"ESTIMATE. Monthly values Jan-Jun 2024 are published (795.4, 800.0, 800.7, 799.5, 800.2, 798.8; mean 799.1) and Chemical Engineering reported the index 'hovering around 800' all year with declines in Jul/Aug/Sep and Nov/Dec. 797.5 is a reasonable central estimate; the true annual average is very likely 795-800."
+2025,,,810.3,PROVISIONAL,ESTIMATE. Chemical Engineering reported (April 2026) that the 2025 annual average was 1.6% above 2024. 810.3 = 797.5 x 1.016. Carries the uncertainty of the 2024 estimate. Replace with the published value if you have a CE subscription.
+2024,1,1,795.4,published,
+2024,1,2,800.0,published,
+2024,1,3,800.7,published,
+2024,2,4,799.5,published,
+2024,2,5,800.2,published,
+2024,2,6,798.8,published,
+2024,2,6,798.8,published-subindex,sub-index: CE Index (composite)
+2024,2,6,1004.0,published-subindex,sub-index: Equipment
+2024,2,6,798.7,published-subindex,sub-index: Heat exchangers & tanks
+2024,2,6,1029.6,published-subindex,sub-index: Process machinery
+2024,2,6,1355.5,published-subindex,"sub-index: Pipe, valves & fittings"
+2024,2,6,582.5,published-subindex,sub-index: Process instruments
+2024,2,6,1543.1,published-subindex,sub-index: Pumps & compressors
+2024,2,6,832.3,published-subindex,sub-index: Electrical equipment
+2024,2,6,1112.9,published-subindex,sub-index: Structural supports & misc.
+2024,2,6,375.7,published-subindex,sub-index: Construction labor
+2024,2,6,801.0,published-subindex,sub-index: Buildings
+2024,2,6,315.2,published-subindex,sub-index: Engineering & supervision

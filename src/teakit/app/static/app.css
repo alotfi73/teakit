@@ -1,0 +1,877 @@
+/* ==========================================================================
+   teakit — engineering drawing sheet.
+   Vellum paper, drafting ink, a title block that stamps the result.
+   No webfonts, no CDN: this has to run on a laptop with no network.
+   ========================================================================== */
+
+:root{
+  /* The browser paints <select> and <datalist> popups, spinners, scrollbars
+     and autofill itself, and without this it picks light or dark from the
+     operating system rather than from the theme this sheet is actually in —
+     which is how a dropdown ends up black on a vellum page. */
+  color-scheme:light;
+  --paper:#eaeee8;          /* drafting vellum, green-grey not cream */
+  --sheet:#f7f9f4;
+  --panel:#ffffff;
+  --ink:#13211f;            /* drafting ink */
+  --ink-2:#3d5250;
+  --muted:#6c807d;
+  --rule:#c6d0c6;
+  --rule-2:#dde3da;
+  --petrol:#0f5c63;         /* primary — matches charts PALETTE[0] */
+  --petrol-2:#15757e;
+  --amber:#b5651d;          /* signal — matches charts PALETTE[1] */
+  --amber-soft:#fdf3e6;
+  --red:#8f2d20;
+  --green:#3f6b48;
+  --shadow:0 1px 2px rgba(19,33,31,.07),0 8px 24px -14px rgba(19,33,31,.22);
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Menlo,Consolas,monospace;
+  --sans:ui-sans-serif,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --r:3px;
+}
+[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#0d1516; --sheet:#121d1e; --panel:#162223;
+  --ink:#e3eae7; --ink-2:#b6c6c3; --muted:#7f9693;
+  --rule:#2b3b3c; --rule-2:#223032;
+  --petrol:#4fb3bf; --petrol-2:#6ac6d1; --amber:#e09a4d;
+  --amber-soft:#2a2317; --red:#d4705f; --green:#7fb08a;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -16px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font:14px/1.5 var(--sans);
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--petrol)}
+
+/* --- sheet frame: the border every drawing has ------------------------- */
+.sheet{
+  display:grid;grid-template-columns:196px minmax(0,1fr) 336px;
+  min-height:100vh;
+}
+
+/* ========================== zone rail (steps) ========================== */
+.rail{
+  background:var(--sheet);border-right:1px solid var(--rule);
+  display:flex;flex-direction:column;position:sticky;top:0;height:100vh;
+}
+/* Mark and wordmark share a row; the strapline keeps the full rail width
+   underneath, so the mark costs it no extra wrapping. */
+.brand{
+  padding:18px 16px 14px;border-bottom:1px solid var(--rule);
+  display:grid;grid-template-columns:auto minmax(0,1fr);
+  column-gap:10px;align-items:center;
+}
+/* The tile carries its own ground, which reads on both themes. */
+.brand .mark{grid-row:1;grid-column:1;width:30px;height:30px;border-radius:7px}
+.brand h1{
+  grid-row:1;grid-column:2;
+  margin:0;font:600 19px/1 var(--sans);letter-spacing:-.02em;
+}
+.brand h1 span{color:var(--petrol)}
+.brand .tag{
+  grid-row:2;grid-column:1/-1;
+  margin-top:5px;font:400 10px/1.35 var(--mono);color:var(--muted);
+  letter-spacing:.02em;text-transform:uppercase;
+}
+.steps{list-style:none;margin:0;padding:8px 0;overflow-y:auto;flex:1}
+.steps li{margin:0}
+.step{
+  width:100%;display:flex;gap:11px;align-items:baseline;
+  padding:9px 16px;background:none;border:0;border-left:2px solid transparent;
+  text-align:left;cursor:pointer;color:var(--ink-2);
+}
+.step:hover{background:var(--panel);color:var(--ink)}
+.step .n{font:500 10px/1 var(--mono);color:var(--muted);letter-spacing:.06em}
+.step .t{font-size:13.5px}
+.step[aria-current="true"]{
+  background:var(--panel);border-left-color:var(--petrol);color:var(--ink);
+  font-weight:550;
+}
+.step[aria-current="true"] .n{color:var(--petrol)}
+.rail-foot{padding:12px 16px;border-top:1px solid var(--rule);
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* ============================== main ================================== */
+.main{padding:24px 30px 90px;min-width:0;max-width:none}
+.panel{display:none;animation:fade .16s ease-out}
+.panel.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.panel{animation:none}}
+
+.head{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  padding-bottom:11px;margin-bottom:20px;border-bottom:2px solid var(--ink);
+}
+.head .eyebrow{
+  font:500 10px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;
+  color:var(--petrol);margin-bottom:7px;display:block;
+}
+.head h2{margin:0;font:600 22px/1.15 var(--sans);letter-spacing:-.02em}
+.head p{margin:7px 0 0;color:var(--muted);font-size:13px;max-width:62ch}
+
+.card{
+  background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);
+  padding:16px 18px;margin-bottom:16px;
+}
+.card > h3{
+  margin:0 0 3px;font:600 11px/1 var(--mono);letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-2);
+}
+.card > .hint{margin:0 0 14px;color:var(--muted);font-size:12.5px;max-width:70ch}
+
+/* ------------------------------ fields -------------------------------- */
+.grid{display:grid;gap:12px 16px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.grid.two{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f label{
+  font:500 10px/1.2 var(--mono);letter-spacing:.07em;text-transform:uppercase;
+  color:var(--muted);
+}
+.f .u{color:var(--ink-2);text-transform:none;letter-spacing:0}
+.f input,.f select,.f textarea{
+  background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);
+  padding:7px 9px;width:100%;font-family:var(--mono);font-size:13px;
+  font-variant-numeric:tabular-nums;
+}
+.f input[type=text],.f textarea,.f select{font-family:var(--sans);font-size:13.5px}
+.f input:focus,.f select:focus,.f textarea:focus{
+  outline:2px solid var(--petrol);outline-offset:-1px;border-color:var(--petrol);
+}
+.f .note{font-size:11.5px;color:var(--muted);line-height:1.4;
+  overflow-wrap:anywhere}
+.f.wide{grid-column:1/-1}
+.f .note.warn{color:var(--amber)}
+
+/* exchange-rate field: number box plus a refresh button on one line */
+.rate-control{display:flex;gap:6px;align-items:stretch}
+.rate-control input{flex:1;min-width:0}
+.rate-control .btn{white-space:nowrap;flex:0 0 auto}
+
+/* ------------------------------ buttons ------------------------------- */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--panel);color:var(--ink);border:1px solid var(--rule);
+  border-radius:var(--r);padding:7px 13px;cursor:pointer;font-size:13px;
+  transition:background .12s,border-color .12s;
+}
+.btn:hover{border-color:var(--petrol);background:var(--sheet)}
+.btn:focus-visible{outline:2px solid var(--petrol);outline-offset:2px}
+.btn.primary{background:var(--petrol);border-color:var(--petrol);color:#fff;font-weight:550}
+.btn.primary:hover{background:var(--petrol-2);border-color:var(--petrol-2)}
+.btn.ghost{border-color:transparent;background:none}
+.btn.ghost:hover{background:var(--sheet);border-color:var(--rule)}
+.btn.sm{padding:4px 9px;font-size:12px}
+.btn.danger:hover{border-color:var(--red);color:var(--red)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row.end{justify-content:flex-end}
+.spacer{flex:1}
+
+/* ------------------------------ tables -------------------------------- */
+/* Tables scroll sideways rather than crushing their columns. A cost estimate
+   that silently clips a digit is worse than one you have to scroll. */
+.tbl-wrap{overflow-x:auto;margin:0 -18px;padding:0 18px}
+table.t{width:100%;border-collapse:collapse;font-size:12.5px}
+table.t th{
+  font:500 9.5px/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);text-align:center;padding:6px 8px;
+  border-bottom:1.5px solid var(--rule);white-space:nowrap;
+}
+table.t td{padding:4px 8px;border-bottom:1px solid var(--rule-2);
+  vertical-align:middle;text-align:center}
+/* The first column is what the row *is* — a name, a tag, a line item — and a
+   column of names reads down its left edge. Everything after it is a short
+   value, and centring those lets the eye run across a row without tracking
+   ragged edges. This is the whole alignment rule; individual tables do not
+   restate it. */
+table.t th:first-child,table.t td:first-child{text-align:left}
+table.t tr:last-child td{border-bottom:0}
+table.t td.n,table.t th.n{font-family:var(--mono);
+  font-variant-numeric:tabular-nums}
+/* Money and other computed figures must never wrap or ellipsis away. */
+table.t td.n{white-space:nowrap}
+/* An input fills its cell, so the cell's alignment does nothing for the text
+   inside it — the control has to be told separately. */
+table.t input,table.t select{text-align:center}
+table.t td:first-child input,table.t td:first-child select{text-align:left}
+table.t tr.sum td{
+  font-weight:600;border-top:1.5px solid var(--ink);border-bottom:0;
+  background:var(--sheet);
+}
+table.t tr.sub td{background:var(--sheet);font-weight:550}
+/* A category heading inside a figures table: not a total, just a place-marker
+   for the lines under it. */
+table.t tr.grp td{
+  font:500 9.5px/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);padding-top:11px;border-bottom:1px solid var(--rule);
+}
+/* One line's contribution inside a category — indented, quiet, and clearly
+   not another line item. */
+table.t tr.subline td{color:var(--muted);font-style:italic}
+table.t tr.subline td:first-child{padding-left:22px}
+table.t input,table.t select{
+  background:transparent;border:1px solid transparent;border-radius:2px;
+  padding:3px 5px;width:100%;font-family:var(--mono);font-size:12.5px;
+  font-variant-numeric:tabular-nums;
+}
+/* Spinner arrows cost ~16px in every numeric column and hide the digits behind
+   them in a narrow cell. The values are typed, not nudged — drop them. */
+table.t input[type=number]{-moz-appearance:textfield;appearance:textfield}
+table.t input[type=number]::-webkit-outer-spin-button,
+table.t input[type=number]::-webkit-inner-spin-button{
+  -webkit-appearance:none;appearance:none;margin:0}
+table.t input:hover,table.t select:hover{border-color:var(--rule)}
+table.t input:focus,table.t select:focus{
+  background:var(--sheet);border-color:var(--petrol);outline:none}
+table.t input.txt,table.t select{font-family:var(--sans)}
+table.t td.act{width:34px;text-align:center}
+
+/* --- per-table minimum widths ----------------------------------------- */
+/* Below these the browser shaves characters off inputs and cells, so the
+   wrapper scrolls instead. The budget is deliberate: on a 1600px window the
+   equipment table has ~1000px to work with, and the totals below stay inside
+   that so the Cost column — the one the user is here for — is on screen
+   without scrolling. The correlation column absorbs the slack, because its
+   text is also on the <option> and in a tooltip. */
+/* table-layout:fixed is the point. With `auto`, the two <select> columns take
+   their width from the longest option text and shove the cost columns off the
+   right-hand edge — which is exactly the "numbers are cut off" complaint. Fixed
+   columns give every field a guaranteed share, so the costs are always on
+   screen; over-long descriptive text ellipsises inside its control and stays
+   readable through the tooltip and the open dropdown. The column budget itself
+   is further down, with the rest of the equipment table's styling.
+   The unit label is the one cell allowed to wrap — "actual ft3/min" is two
+   words and clipping it loses the basis of the size beside it. */
+
+table.t#rm-table,table.t#ut-table,table.t#ws-table{min-width:860px}
+table.t#pr-table{min-width:1040px}
+table.t#staff-table{min-width:560px}
+table.t#tp-table{min-width:880px}
+/* Inputs inside a table still need room for their own content. */
+table.t input,table.t select{min-width:0}
+table.t td.act{width:34px}
+
+/* When a table does overflow, say so rather than clipping in silence. */
+.tbl-wrap{scrollbar-width:thin}
+.tbl-wrap::-webkit-scrollbar{height:9px}
+.tbl-wrap::-webkit-scrollbar-thumb{background:var(--rule);border-radius:5px}
+.tbl-wrap::-webkit-scrollbar-track{background:transparent}
+
+/* A cell whose text is genuinely too long gets an ellipsis AND a tooltip,
+   never a silent clip. */
+.trunc{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.x{background:none;border:0;color:var(--muted);cursor:pointer;padding:2px 5px;
+  border-radius:2px;line-height:1}
+.x:hover{color:var(--red);background:var(--sheet)}
+
+/* ----------------------------- notices -------------------------------- */
+.msg{
+  border-left:3px solid var(--rule);padding:9px 13px;margin:10px 0;
+  font-size:12.5px;background:var(--sheet);border-radius:0 var(--r) var(--r) 0;
+}
+.msg.warn{border-left-color:var(--amber);background:var(--amber-soft)}
+.msg.err{border-left-color:var(--red)}
+.msg.note{color:var(--ink-2)}
+.msg + .msg{margin-top:6px}
+.msg b{font-weight:600}
+
+.pill{
+  display:inline-flex;align-items:center;gap:5px;padding:2px 8px;
+  border:1px solid var(--rule);border-radius:20px;font:500 10px/1.7 var(--mono);
+  letter-spacing:.05em;text-transform:uppercase;color:var(--muted);
+}
+.pill.ok{border-color:var(--green);color:var(--green)}
+.pill.warn{border-color:var(--amber);color:var(--amber)}
+
+/* ======================= title block (signature) ====================== */
+.block{
+  background:var(--sheet);border-left:1px solid var(--rule);
+  position:sticky;top:0;height:100vh;display:flex;flex-direction:column;
+}
+.block-inner{padding:14px;display:flex;flex-direction:column;gap:0;
+  height:100%;overflow-y:auto}
+.tb{border:2px solid var(--ink);background:var(--panel)}
+.tb-row{display:grid;border-bottom:1px solid var(--ink)}
+.tb-row:last-child{border-bottom:0}
+.tb-row.c2{grid-template-columns:1fr 1fr}
+.tb-row.c3{grid-template-columns:1fr 1fr 1fr}
+.tb-cell{padding:6px 9px;border-right:1px solid var(--ink);min-width:0}
+.tb-cell:last-child{border-right:0}
+.tb-cell .k{
+  font:500 8.5px/1.3 var(--mono);letter-spacing:.11em;text-transform:uppercase;
+  color:var(--muted);display:block;
+}
+.tb-cell .v{
+  font:500 12px/1.35 var(--mono);overflow-wrap:anywhere;
+  font-variant-numeric:tabular-nums;
+}
+.tb-hero{padding:12px 11px 10px;text-align:left}
+.tb-hero .k{
+  font:500 8.5px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);
+}
+/* The hero figure is the one number everyone reads. It must fit the sidebar at
+   any magnitude, so the size is fluid rather than a fixed 33px that overflows
+   as soon as the value runs to six digits or carries a wide symbol. */
+.tb-hero .v{
+  font:600 clamp(22px,3.1vw,33px)/1.05 var(--mono);letter-spacing:-.03em;
+  margin:6px 0 2px;font-variant-numeric:tabular-nums;color:var(--petrol);
+  overflow-wrap:anywhere;
+}
+.tb-hero .v.stale{color:var(--muted)}
+.tb-hero .un{font:500 12px/1.3 var(--mono);color:var(--ink-2);
+  overflow-wrap:anywhere;display:block}
+.rev{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:5px 9px;border-top:1px solid var(--ink);
+  font:500 9.5px/1.5 var(--mono);letter-spacing:.08em;text-transform:uppercase;
+}
+.rev .state{color:var(--green)}
+.rev .state.stale{color:var(--amber)}
+
+.mini{margin-top:14px}
+.mini h4{
+  margin:0 0 6px;font:500 9.5px/1 var(--mono);letter-spacing:.11em;
+  text-transform:uppercase;color:var(--muted);
+}
+.mini table{width:100%;border-collapse:collapse;font:400 11.5px/1.5 var(--mono);
+  font-variant-numeric:tabular-nums}
+.mini td{padding:2.5px 0;border-bottom:1px solid var(--rule-2)}
+.mini td:last-child{text-align:right;white-space:nowrap;padding-left:6px}
+.mini td.lbl{color:var(--muted);font-family:var(--sans);font-size:12px;
+  padding-right:8px;overflow-wrap:anywhere;white-space:normal}
+.mini tr.tot td{font-weight:650;border-top:1px solid var(--ink);border-bottom:0;
+  padding-top:4px}
+.bar{height:4px;background:var(--rule-2);border-radius:2px;overflow:hidden;
+  display:flex;margin-top:9px}
+.bar i{display:block;height:100%}
+
+.block-actions{margin-top:auto;padding-top:14px;display:grid;gap:7px}
+
+/* --- where exports are written, shown under the export buttons --------- */
+.dest{
+  margin-top:9px;padding-top:9px;border-top:1px solid var(--rule);
+  display:grid;gap:4px;
+}
+.dest-head{display:flex;align-items:center;gap:6px}
+.dest-k{
+  flex:1;font:500 9.5px/1 var(--mono);letter-spacing:.11em;
+  text-transform:uppercase;color:var(--muted);
+}
+.dest-path{
+  display:block;width:100%;text-align:left;padding:5px 7px;
+  background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);
+  font-family:var(--mono);font-size:11px;line-height:1.35;color:var(--ink-2);
+  cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  transition:border-color .12s,color .12s;
+}
+.dest-path:hover{border-color:var(--petrol);color:var(--ink)}
+.dest-path.warn{border-color:var(--amber);color:var(--amber)}
+.dest-more{
+  justify-self:start;padding:0;border:0;background:none;cursor:pointer;
+  font-size:11px;color:var(--muted);text-decoration:underline;
+  text-underline-offset:2px;
+}
+.dest-more:hover{color:var(--petrol)}
+
+/* --- the report-folder dialog ----------------------------------------- */
+.dest-choice{display:grid;gap:7px;margin:4px 0 2px}
+.dest-opt{
+  display:flex;gap:9px;align-items:flex-start;padding:8px 11px;cursor:pointer;
+  background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);
+  font-size:12.5px;line-height:1.45;
+}
+.dest-opt.on{border-color:var(--petrol);background:var(--panel)}
+.dest-opt input[type=radio]{
+  flex:0 0 15px;width:15px;height:15px;margin:1px 0 0;accent-color:var(--petrol);
+  cursor:pointer;
+}
+.dest-opt b{display:block;font-weight:600}
+.dest-opt-n{display:block;font-size:11.5px;color:var(--muted)}
+.dest-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:8px 0 0}
+.dest-input{
+  flex:1 1 260px;min-width:0;padding:6px 9px;border:1px solid var(--rule);
+  border-radius:var(--r);background:var(--sheet);
+  font-family:var(--mono);font-size:12px;
+}
+.dest-input:focus{outline:2px solid var(--petrol);outline-offset:-1px;
+  border-color:var(--petrol)}
+#files-body .msg{margin:12px 0 0}
+#files-body table.t{min-width:0;font-size:12.5px}
+#files-body table.t td:first-child{font-family:var(--mono);font-size:11.5px;
+  overflow-wrap:anywhere}
+
+/* ------------------------------ charts -------------------------------- */
+.figs{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));
+  margin-bottom:6px}
+/* A heading over each group of figures. Fourteen unlabelled charts on one
+   page is a page nobody finds anything on. */
+h3.fig-group{
+  margin:22px 0 2px;font:600 13px/1.3 var(--sans);
+  padding-bottom:5px;border-bottom:1px solid var(--rule);
+}
+h3.fig-group:first-child{margin-top:4px}
+h3.fig-group + .hint{margin:0 0 10px}
+.fig{background:var(--panel);border:1px solid var(--rule);border-radius:var(--r);
+  padding:6px;position:relative}
+.fig svg{display:block;width:100%;height:auto}
+/* Figure tools: width and export. Hidden until the figure is hovered or
+   focused so a page of charts stays quiet, but reachable by keyboard. */
+.fig .fig-tools{position:absolute;top:8px;right:8px;display:flex;gap:6px;
+  opacity:0;transition:opacity .12s}
+.fig:hover .fig-tools,.fig:focus-within .fig-tools{opacity:1}
+/* A figure the reader has widened spans the whole grid, whatever the column
+   count. The grid is auto-fit, so this is the only way to say "all of it". */
+.fig.wide{grid-column:1/-1}
+
+/* --------------------------- catalogue picker -------------------------- */
+dialog{
+  border:1px solid var(--rule);border-radius:var(--r);padding:0;
+  background:var(--panel);color:var(--ink);box-shadow:var(--shadow);
+  max-width:760px;width:calc(100vw - 40px);
+}
+dialog::backdrop{background:rgba(19,33,31,.4)}
+.dlg-head{padding:14px 18px;border-bottom:1px solid var(--rule);
+  display:flex;gap:12px;align-items:center}
+.dlg-head h3{margin:0;font:600 15px/1 var(--sans);flex:1}
+.dlg-body{padding:14px 18px;max-height:min(62vh,540px);overflow:auto}
+.dlg-foot{padding:12px 18px;border-top:1px solid var(--rule);
+  display:flex;gap:8px;justify-content:flex-end}
+.cat-row{
+  display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;
+  padding:8px 10px;border:1px solid transparent;border-radius:var(--r);
+  cursor:pointer;
+}
+.cat-row:hover{background:var(--sheet);border-color:var(--rule)}
+.cat-row .k{font:500 12.5px/1.3 var(--mono)}
+.cat-row .d{font-size:12px;color:var(--muted)}
+.cat-row .m{font:400 11px/1.3 var(--mono);color:var(--muted);text-align:right;
+  white-space:nowrap}
+
+/* ------------------------------ misc ---------------------------------- */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--rule);margin-bottom:16px;
+  overflow-x:auto}
+.tabs button{
+  background:none;border:0;border-bottom:2px solid transparent;padding:8px 13px;
+  cursor:pointer;color:var(--muted);font-size:13px;white-space:nowrap;
+}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--petrol);
+  font-weight:550}
+.tabs button:hover{color:var(--ink)}
+.empty{padding:26px 16px;text-align:center;color:var(--muted);font-size:13px;
+  border:1px dashed var(--rule);border-radius:var(--r)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 14px;font-size:12.5px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;font-family:var(--mono);font-size:12px}
+.busy{position:fixed;inset:auto 0 0 0;height:2px;background:var(--rule-2);
+  overflow:hidden;display:none;z-index:50}
+.busy.on{display:block}
+.busy i{display:block;height:100%;width:34%;background:var(--petrol);
+  animation:slide 1s infinite ease-in-out}
+@keyframes slide{0%{transform:translateX(-110%)}100%{transform:translateX(320%)}}
+.toast{
+  position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+  background:var(--ink);color:var(--paper);padding:9px 16px;border-radius:var(--r);
+  font-size:13px;box-shadow:var(--shadow);z-index:60;opacity:0;
+  pointer-events:none;transition:opacity .18s,transform .18s;
+}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(-4px)}
+code{font-family:var(--mono);font-size:12px;background:var(--sheet);
+  padding:1px 4px;border-radius:2px}
+
+/* ----------------------------- responsive ------------------------------ */
+@media (max-width:1180px){
+  .sheet{grid-template-columns:172px minmax(0,1fr) 300px}
+  .main{padding:20px 20px 80px}
+}
+@media (max-width:960px){
+  .sheet{grid-template-columns:1fr}
+  .rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--rule)}
+  .steps{display:flex;overflow-x:auto;padding:0}
+  .steps li{flex:0 0 auto}
+  .step{flex-direction:column;gap:2px;padding:10px 14px;border-left:0;
+    border-bottom:2px solid transparent}
+  .step[aria-current="true"]{border-left:0;border-bottom-color:var(--petrol)}
+  .block{position:static;height:auto;border-left:0;border-top:1px solid var(--rule)}
+  .block-inner{max-width:520px;margin:0 auto}
+  .figs{grid-template-columns:1fr}
+}
+@media print{
+  .rail,.block-actions,.busy,.fig .fig-tools{display:none}
+  body{background:#fff}
+  .sheet{grid-template-columns:1fr}
+  .panel{display:block !important}
+}
+
+/* ======================================================================
+   Option help, the equipment parameter panel, and the Info section.
+   ====================================================================== */
+
+/* --- the sentence under a dropdown, for the option now selected ------- */
+.opt-note{
+  font-size:11.5px;color:var(--muted);line-height:1.4;
+  overflow-wrap:anywhere;display:block;margin-top:1px;
+}
+.opt-note:empty{display:none}
+
+/* --- a "?" beside a label ------------------------------------------- */
+.tip{
+  width:14px;height:14px;padding:0;margin-left:5px;border-radius:50%;
+  border:1px solid var(--rule);background:var(--sheet);color:var(--muted);
+  font:600 9px/1 var(--mono);cursor:help;vertical-align:middle;
+}
+.tip:hover{border-color:var(--petrol);color:var(--petrol)}
+.tip-body{display:none;font-size:11.5px;color:var(--ink-2);margin-top:4px}
+.tip-body.on{display:block}
+
+/* --- the rail's Info entry, set apart from the numbered steps -------- */
+.rail-gap{margin-top:6px;border-top:1px solid var(--rule);padding-top:6px}
+.rail-gap .step .n{font-style:italic}
+
+/* ------------------------- the rail, collapsed ------------------------- */
+/* Only the numbers, and the current step still marked. Everything that
+   carries a word is hidden rather than shrunk: half a word is worse than a
+   number, and the names come back as tooltips on the buttons. */
+body.rail-min .sheet{grid-template-columns:56px minmax(0,1fr) 336px}
+body.rail-min .rail{padding-left:0;padding-right:0}
+body.rail-min .brand .tag,
+body.rail-min .brand h1,
+body.rail-min .step .t,
+body.rail-min #theme,
+body.rail-min #btn-new{display:none}
+/* 56px fits one of the two, and the mark is the half that still reads. */
+body.rail-min .brand{padding:14px 0 10px;display:flex;justify-content:center}
+body.rail-min .brand .mark{width:26px;height:26px}
+body.rail-min .step{justify-content:center;padding-left:0;padding-right:0;gap:0}
+body.rail-min .step .n{font-size:12px}
+body.rail-min .rail-foot{justify-content:center;padding:10px 0}
+body.rail-min #btn-rail{width:100%}
+@media (max-width:1280px){
+  body.rail-min .sheet{grid-template-columns:52px minmax(0,1fr) 300px}
+}
+/* Below the breakpoint the rail is already a horizontal strip of tabs, and
+   collapsing a strip of tabs to numbers helps nobody. */
+@media (max-width:960px){
+  body.rail-min .sheet{grid-template-columns:1fr}
+  body.rail-min .step .t{display:block}
+  body.rail-min #btn-rail{display:none}
+  body.rail-min .brand{display:grid;justify-content:normal;padding:18px 16px 14px}
+  body.rail-min .brand h1{display:block}
+  body.rail-min .brand .mark{width:30px;height:30px}
+}
+
+/* ======================= equipment: the table ======================== */
+/* Fourteen columns: expand toggle, then the item's own identity (tag, basis,
+   name, correlation), then what it is, then the two costs — purchased and
+   installed. The two costs are the point of the table and are kept together
+   at the right-hand end where the eye ends up. */
+table.t#eq-table{table-layout:fixed;width:100%;min-width:1060px}
+#eq-table th:nth-child(1),#eq-table td:nth-child(1){width:30px}    /* open      */
+#eq-table th:nth-child(2),#eq-table td:nth-child(2){width:8%}      /* tag       */
+#eq-table th:nth-child(3),#eq-table td:nth-child(3){width:9%}      /* basis     */
+#eq-table th:nth-child(4),#eq-table td:nth-child(4){width:17%}     /* item name */
+#eq-table th:nth-child(5),#eq-table td:nth-child(5){width:8%}      /* size      */
+#eq-table th:nth-child(6),#eq-table td:nth-child(6){width:7%}      /* unit      */
+#eq-table th:nth-child(7),#eq-table td:nth-child(7){width:4%}      /* n         */
+#eq-table th:nth-child(8),#eq-table td:nth-child(8){width:4%}      /* +sp       */
+#eq-table th:nth-child(9),#eq-table td:nth-child(9){width:10%}     /* mat'l     */
+#eq-table th:nth-child(10),#eq-table td:nth-child(10){width:8%}    /* section   */
+/* The two cost columns are what the table is for, and money must never be
+   shaved or wrapped — they get the widest share after the item name. */
+#eq-table th:nth-child(11),#eq-table td:nth-child(11){width:11%}   /* purchased */
+#eq-table th:nth-child(12),#eq-table td:nth-child(12){width:11%}   /* installed */
+#eq-table th:nth-child(13),#eq-table td:nth-child(13){width:3.5%}  /* remove    */
+#eq-table td:nth-child(6){white-space:normal;line-height:1.25}
+/* Column 1 here is the 30px expand toggle, so the "first column reads left"
+   rule belongs to the tag beside it. */
+#eq-table th:nth-child(1),#eq-table td:nth-child(1){text-align:center}
+#eq-table th:nth-child(2),#eq-table td:nth-child(2){text-align:left}
+#eq-table td:nth-child(2) input{text-align:left}
+#eq-table td .unit{font-size:11px;color:var(--muted)}
+
+.exp-btn{
+  width:20px;height:20px;padding:0;border:1px solid transparent;border-radius:3px;
+  background:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;
+  transition:transform .14s,color .12s,background .12s;
+}
+.exp-btn:hover{background:var(--sheet);border-color:var(--rule);color:var(--ink)}
+.exp-btn.on{transform:rotate(90deg);color:var(--petrol)}
+#eq-table tr.open > td{background:var(--sheet)}
+#eq-table td.cost.stale{color:var(--amber);font-style:italic}
+#eq-table td.cost.stale::after{content:" ·";font-weight:700}
+.pill.xs{font-size:8.5px;padding:1px 5px;margin-left:5px}
+
+/* ================= equipment: the parameter panel ==================== */
+.eq-detail-row > td{padding:0 !important;background:var(--sheet)}
+.eq-detail{
+  padding:14px 16px 16px;border-left:2px solid var(--petrol);
+  background:var(--sheet);
+}
+.eq-about{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);
+  gap:8px 24px;margin-bottom:14px;align-items:start;
+}
+.eq-about-h{font-size:13px;font-weight:550;grid-column:1/-1}
+.eq-about .kv{font-size:12px}
+.eq-about .msg{margin:0;grid-column:1/-1}
+
+.par-grid{
+  display:grid;gap:12px 16px;
+  grid-template-columns:repeat(auto-fit,minmax(206px,1fr));
+  margin-bottom:12px;
+}
+.par{
+  display:flex;flex-direction:column;gap:4px;min-width:0;
+  background:var(--panel);border:1px solid var(--rule-2);border-radius:var(--r);
+  padding:9px 10px 8px;
+}
+.par.on{border-color:var(--amber);background:var(--amber-soft)}
+/* A parameter whose control carries long text — the correlation picker, whose
+   options are a full sentence — takes the whole grid width rather than being
+   squeezed into a column three words wide. */
+.par.wide{grid-column:1/-1}
+/* The basis column of the installation-factor table is prose, not a figure. */
+table.t td.basis-cell{font-size:11.5px;color:var(--muted);line-height:1.3;
+  white-space:normal;text-align:left}
+.par label{
+  font:500 10px/1.2 var(--mono);letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);display:flex;align-items:center;flex-wrap:wrap;gap:4px;
+}
+.par label .u{
+  color:var(--ink-2);text-transform:none;letter-spacing:0;
+  font-family:var(--sans);font-size:11px;
+}
+/* The panel is rendered inside #eq-table, so `table.t input` — an element,
+   a class and an element — outranked every single-class rule here and took
+   the border, the padding and, on the checkbox, the width. Scoping to
+   .eq-detail adds the class that wins the comparison back. */
+.eq-detail .par input{
+  background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);
+  padding:6px 8px;width:100%;font-family:var(--mono);font-size:12.5px;
+  font-variant-numeric:tabular-nums;
+}
+.eq-detail .par input.txt{font-family:var(--sans);font-size:13px}
+.eq-detail .par input:focus{outline:2px solid var(--petrol);outline-offset:-1px;
+  border-color:var(--petrol);background:var(--sheet)}
+.eq-detail .par input.edited{border-color:var(--amber);background:var(--panel);
+  font-weight:550}
+.par-help{font-size:11px;line-height:1.4;color:var(--muted);overflow-wrap:anywhere}
+.par-foot{display:flex;align-items:center;gap:7px;min-height:16px}
+.par-def{font:400 10.5px/1.3 var(--mono);color:var(--muted)}
+.par-def.req{color:var(--amber)}
+.btn.xs{padding:1px 6px;font-size:10.5px;border-radius:2px}
+
+/* One row: a real checkbox, then the sentence across the rest of the width.
+   The checkbox used to inherit width:100% from the table and swallow the
+   line, which left the text in a column three words wide. */
+.eq-detail .eq-flag{
+  display:flex;gap:11px;align-items:center;padding:10px 13px;margin-bottom:12px;
+  background:var(--amber-soft);border:1px solid var(--rule);
+  border-left:3px solid var(--amber);border-radius:0 var(--r) var(--r) 0;
+  font-size:12.5px;line-height:1.45;cursor:pointer;
+}
+.eq-detail .eq-flag input[type=checkbox]{
+  flex:0 0 16px;width:16px;height:16px;min-width:16px;margin:0;padding:0;
+  border:0;background:none;accent-color:var(--amber);cursor:pointer;
+}
+.eq-detail .eq-flag .eq-flag-text{flex:1 1 auto;min-width:0}
+.eq-detail .eq-flag b{display:block;margin-bottom:1px;font-weight:600}
+.eq-detail .eq-flag .eq-flag-sub{
+  display:block;font-size:11.5px;color:var(--muted);line-height:1.45;
+}
+
+/* --- the parameter guide dialog --- */
+.guide-h{
+  margin:16px 0 8px;font:600 12px/1.2 var(--sans);letter-spacing:.02em;
+  padding-bottom:5px;border-bottom:1px solid var(--rule);
+}
+.guide-dl{
+  display:grid;grid-template-columns:minmax(120px,168px) minmax(0,1fr);
+  gap:7px 16px;margin:0;font-size:12.5px;line-height:1.55;
+}
+.guide-dl dt{
+  font-weight:600;color:var(--ink);margin:0;
+  padding-top:1px;overflow-wrap:anywhere;
+}
+.guide-dl dd{margin:0;color:var(--ink-2);overflow-wrap:anywhere}
+.guide-dl dt.hit,.guide-dl dd.hit{background:var(--amber-soft);border-radius:2px}
+@media (max-width:640px){
+  .guide-dl{grid-template-columns:1fr;gap:2px 0}
+  .guide-dl dd{margin-bottom:9px}
+}
+
+/* =========== equipment: parameters and utility consumption ===========
+   Both are laid out with CSS grid rather than a nested <table>. The panel
+   lives inside #eq-table, and that table's own `#eq-table th:nth-child(n)`
+   width rules match by descendant — a nested table would inherit the
+   equipment list's column budget, which is not its own. */
+.eq-block{
+  background:var(--panel);border:1px solid var(--rule-2);border-radius:var(--r);
+  padding:10px 12px 11px;margin-bottom:12px;
+}
+.eq-block-h{
+  display:flex;align-items:flex-start;gap:12px;margin-bottom:9px;
+}
+.eq-block-h > div{flex:1;min-width:0}
+.eq-block-h h4{
+  margin:0;font:600 11.5px/1.3 var(--sans);letter-spacing:.01em;color:var(--ink);
+}
+.eq-block-hint{
+  display:block;font-size:11px;line-height:1.45;color:var(--muted);margin-top:2px;
+}
+.eq-block-empty{
+  font-size:11.5px;line-height:1.5;color:var(--muted);
+  padding:7px 9px;background:var(--sheet);border-radius:var(--r);
+}
+.eq-block-foot{
+  display:flex;align-items:baseline;gap:12px;margin-top:8px;padding-top:7px;
+  border-top:1px solid var(--rule-2);font-size:11px;color:var(--muted);
+}
+.eq-block-foot span{flex:1;min-width:0;line-height:1.45}
+.eq-block-foot b{
+  font-family:var(--mono);font-size:12.5px;color:var(--ink);
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+
+.kv-grid{display:grid;gap:5px 8px;align-items:center;min-width:0}
+.kv-grid.params{grid-template-columns:
+  minmax(0,1.3fr) minmax(0,.8fr) minmax(0,.7fr) minmax(0,1.6fr) 24px}
+.kv-grid.utils{grid-template-columns:
+  minmax(0,1.5fr) minmax(0,.85fr) minmax(0,.7fr) minmax(0,.9fr)
+  minmax(0,1.15fr) 62px 74px minmax(0,1fr) 24px}
+.kv-grid.parts{grid-template-columns:
+  minmax(0,1.5fr) minmax(0,.7fr) minmax(0,.65fr) minmax(0,.95fr)
+  minmax(0,1.25fr) 62px 74px minmax(0,1fr) 24px}
+.kv-head{
+  font:500 9.5px/1.2 var(--mono);letter-spacing:.07em;text-transform:uppercase;
+  color:var(--muted);padding-bottom:1px;overflow:hidden;text-overflow:ellipsis;
+}
+.kv-head.n{text-align:right}
+.kv-head.c{text-align:center}
+
+/* Same specificity trick as the parameter inputs: two classes, so `table.t
+   input` does not take the border and padding back off. */
+.eq-detail .kv-grid input[type=text],
+.eq-detail .kv-grid input[type=number],
+.eq-detail .kv-grid select{
+  width:100%;min-width:0;padding:4px 7px;font-size:12px;
+  background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);
+  font-family:var(--mono);font-variant-numeric:tabular-nums;
+}
+.eq-detail .kv-grid input.txt,.eq-detail .kv-grid select{
+  font-family:var(--sans);font-size:12.5px}
+.eq-detail .kv-grid input.n{text-align:right}
+.eq-detail .kv-grid input:focus,.eq-detail .kv-grid select:focus{
+  outline:2px solid var(--petrol);outline-offset:-1px;border-color:var(--petrol)}
+.eq-detail .kv-grid input[type=checkbox]{
+  width:15px;height:15px;min-width:15px;padding:0;margin:0;border:0;
+  background:none;accent-color:var(--petrol);cursor:pointer;
+}
+.kv-check{display:flex;justify-content:center;align-items:center;cursor:pointer}
+/* A utility of the user's own: the text box, and a way back to the list. */
+.util-name-custom{display:flex;gap:4px;align-items:center;min-width:0}
+.util-name-custom input{flex:1 1 auto;min-width:0}
+.util-name-custom .x{flex:0 0 auto}
+.kv-locked{
+  font-size:12px;color:var(--muted);padding:4px 2px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;
+}
+.kv-locked.n{text-align:right;font-family:var(--mono);
+  font-variant-numeric:tabular-nums}
+.kv-cost{
+  font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums;
+  text-align:right;padding:4px 2px;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;
+}
+.kv-cost.unpriced,.rollup .unpriced{color:var(--amber);font-style:italic}
+/* A negative rate is generation, and its cost is a credit. It should not read
+   as an ordinary expense that happens to have a minus sign. */
+.kv-cost.credit,.rollup .credit{color:var(--green)}
+.pill.gen{background:var(--green);color:#fff;border-color:var(--green)}
+
+/* --- the equipment roll-up on the Operating cost panel --- */
+.sub-h{
+  margin:18px 0 4px;font:600 12px/1.3 var(--sans);color:var(--ink);
+  padding-top:12px;border-top:1px solid var(--rule);
+}
+/* A quieter second sentence inside a .msg — the attribution under a derived
+   figure, where the figure is the point and its provenance is the footnote. */
+.msg .muted{color:var(--muted);font-size:11.5px;line-height:1.45}
+
+#eq-util-rollup{margin-bottom:4px}
+#eq-util-rollup .msg{margin:0}
+table.t.rollup{min-width:720px;font-size:12.5px}
+table.t.rollup th.c,table.t.rollup td.c{text-align:center}
+table.t.rollup tr.rollup-item td{color:var(--ink-2)}
+table.t.rollup tr.rollup-item td:first-child{padding-left:20px}
+/* The group rows are a subtotal, not an input row: nothing in them is
+   editable, so they should not look as though something might be. */
+table.t.rollup tr.sub td{font-weight:600}
+.rollup-name{color:var(--muted);margin-left:8px;font-size:11.5px}
+.linkish{
+  padding:0;border:0;background:none;cursor:pointer;color:var(--petrol);
+  font:inherit;font-family:var(--mono);font-size:12px;
+  text-decoration:underline;text-underline-offset:2px;
+}
+.linkish:hover{color:var(--ink)}
+
+/* Nine columns need room. Below it the block scrolls rather than shaving
+   every input down to three characters — hiding columns instead would take
+   `nth-child(9n+5)` arithmetic that breaks the moment a column is added. */
+.eq-block{overflow-x:auto}
+.kv-grid.utils{min-width:760px}
+.kv-grid.parts{min-width:780px}
+.kv-grid.params{min-width:420px}
+
+.eq-calc{
+  background:var(--panel);border:1px solid var(--rule-2);border-radius:var(--r);
+  padding:9px 11px;margin-bottom:12px;
+}
+.eq-calc-h{
+  font:500 9.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:6px;
+}
+.eq-calc code{
+  display:block;background:none;padding:0;font-size:11.5px;line-height:1.6;
+  overflow-wrap:anywhere;color:var(--ink-2);
+}
+.eq-acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* ========================= the Info section ========================== */
+.g-toc .row{gap:6px}
+.g-sec .g-p{font-size:13.5px;line-height:1.6;margin:0 0 12px;max-width:76ch}
+.g-sec .g-ul{margin:0 0 12px;padding-left:20px;font-size:13.5px;line-height:1.65;
+  max-width:76ch}
+.g-sec .g-ul li{margin-bottom:5px}
+.g-sec table.t{font-size:12.5px}
+.g-sec table.t td{vertical-align:top;padding:6px 8px}
+.g-sec table.t td.k{font-weight:550;white-space:nowrap}
+.g-sec .tbl-wrap{margin-bottom:12px}
+.g-eq{
+  background:var(--sheet);border:1px solid var(--rule);
+  border-left:3px solid var(--petrol);border-radius:0 var(--r) var(--r) 0;
+  padding:9px 12px;margin:0 0 12px;
+}
+.g-eq code{display:block;background:none;padding:0;font-size:12.5px;
+  line-height:1.6;overflow-wrap:anywhere}
+.g-eq-n{
+  display:block;font:500 9.5px/1 var(--mono);letter-spacing:.09em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:5px;
+}
+.m-src{font-size:11.5px;color:var(--muted);margin:0 0 12px;font-style:italic}
+.m-sec table.t td{vertical-align:top}
+.m-steps table.t td:first-child{width:52%}
+.m-steps table.t tr.sub td{background:var(--sheet);font-weight:600}
+.m-pointer{border-left:3px solid var(--petrol)}
+#info-options table.t td{vertical-align:top;font-size:12.5px;line-height:1.5}
+#info-options code{font-size:11.5px}
+
+@media (max-width:960px){
+  .eq-about{grid-template-columns:1fr}
+}

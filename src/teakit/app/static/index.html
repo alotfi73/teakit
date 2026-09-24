@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>teakit — techno-economic analysis</title>
+<!-- Served from teakit/app/static, never a CDN: this has to run offline. The
+     .ico is the same file the .exe is stamped with. -->
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="teakit-icon.svg">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="busy" id="busy"><i></i></div>
+
+<div class="sheet">
+
+  <!-- ===================== zone rail ===================== -->
+  <nav class="rail" aria-label="Estimating sequence">
+    <div class="brand">
+      <img class="mark" src="teakit-icon.svg" alt="" width="30" height="30">
+      <h1>tea<span>kit</span></h1>
+      <div class="tag">Process plant cost estimating<br>DOE/NETL &middot; NREL &middot; CEPCI</div>
+    </div>
+    <ol class="steps" id="steps">
+      <li><button class="step" data-panel="project"   aria-current="true"><span class="n">01</span><span class="t">Project</span></button></li>
+      <li><button class="step" data-panel="equipment"><span class="n">02</span><span class="t">Equipment</span></button></li>
+      <li><button class="step" data-panel="capital"><span class="n">03</span><span class="t">Capital</span></button></li>
+      <li><button class="step" data-panel="operating"><span class="n">04</span><span class="t">Operating cost</span></button></li>
+      <li><button class="step" data-panel="products"><span class="n">05</span><span class="t">Products</span></button></li>
+      <li><button class="step" data-panel="finance"><span class="n">06</span><span class="t">Finance</span></button></li>
+      <li><button class="step" data-panel="results"><span class="n">07</span><span class="t">Results</span></button></li>
+      <li><button class="step" data-panel="charts"><span class="n">08</span><span class="t">Charts</span></button></li>
+      <li><button class="step" data-panel="sensitivity"><span class="n">09</span><span class="t">Sensitivity</span></button></li>
+      <li class="rail-gap"><button class="step" data-panel="info"><span class="n">i</span><span class="t">Guide &amp; method</span></button></li>
+    </ol>
+    <div class="rail-foot">
+      <button class="btn sm ghost" id="theme" title="Switch between light and dark">Dark</button>
+      <button class="btn sm ghost" id="btn-new">New</button>
+      <button class="btn sm ghost" id="btn-rail"
+              title="Collapse the step list to its numbers"
+              aria-label="Collapse the step list">&laquo;</button>
+    </div>
+  </nav>
+
+  <!-- ======================= main ======================= -->
+  <main class="main" id="main">
+
+  <!-- 01 PROJECT ------------------------------------------------------- -->
+  <section class="panel on" id="p-project">
+    <div class="head">
+      <div>
+        <span class="eyebrow">01 &mdash; Project</span>
+        <h2>What are you costing, and on what basis?</h2>
+        <p>The dollar-year, the location and the costing method decide what every
+           number downstream means. Set them first and they will appear on the
+           title block and on every export.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Identification</h3>
+      <div class="grid two">
+        <div class="f wide"><label for="f-name">Project name</label>
+          <input type="text" id="f-name" data-path="name" placeholder="e.g. Methanol from natural gas"></div>
+        <div class="f wide"><label for="f-desc">Description</label>
+          <textarea id="f-desc" data-path="description" rows="2"
+            placeholder="Scope, feedstock, capacity — this goes at the top of the report."></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Cost basis</h3>
+      <p class="hint">Equipment correlations are on a 1998 Q1 U.S. Gulf Coast basis
+        and are escalated to your dollar-year by CEPCI. A long escalation widens the
+        error band — the estimate class shown on the report reflects that.</p>
+      <div class="grid">
+        <div class="f"><label for="f-year">Dollar year</label>
+          <select id="f-year" data-path="dollar_year" data-type="int"
+                  data-after="year"></select>
+          <span class="note" id="year-note"></span></div>
+        <div class="f"><label for="f-cur">Reporting currency</label>
+          <select id="f-cur" data-path="currency" data-after="currency"></select>
+          <span class="note">The estimate is computed in USD and converted for
+            reporting. Inputs stay in USD.</span></div>
+        <div class="f"><label for="f-rate">Exchange rate <span class="u" id="f-rate-unit">per USD</span></label>
+          <div class="rate-control">
+            <input type="number" id="f-rate" data-path="exchange_rate"
+                   data-after="rate" step="0.0001" min="0.000001">
+            <button class="btn sm" type="button" id="btn-rate"
+                    title="Fetch today's ECB reference rate">Update</button>
+          </div>
+          <span class="note" id="rate-note"></span></div>
+        <div class="f"><label for="f-loc">Location</label>
+          <select id="f-loc" data-path="location"></select>
+          <span class="note" id="loc-note"></span></div>
+        <div class="f"><label for="f-lf">Location factor override</label>
+          <input type="number" id="f-lf" data-path="location_factor" step="0.01"
+                 placeholder="from location">
+          <span class="note">Leave blank to use the regional default.</span></div>
+        <div class="f"><label for="f-method">Costing method</label>
+          <select id="f-method" data-path="method">
+            <option value="dcf">DCF — discounted cash flow, price solved at NPV = 0</option>
+            <option value="fcr">FCR — fixed charge rate &times; TASC</option>
+            <option value="crf">CRF — annualised capital &divide; production</option>
+            <option value="simple">Simple — straight line, no cost of capital</option>
+          </select>
+          <span class="note" id="method-note"></span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Cost index</h3>
+      <p class="hint">Every cost in the estimate is moved between dollar-years by
+        the ratio of two CEPCI values, so this table is the one shared number the
+        whole capital estimate rests on. It lists the years <em>this</em> study
+        touches. Type over any of them &mdash; a published figure you have and
+        teakit does not, or a projection for a year past the series &mdash; and
+        your value is saved with the project and used in place of the shipped one.</p>
+      <div class="tbl-wrap"><table class="t" id="cepci-table"></table></div>
+      <div class="row" style="margin-top:10px">
+        <select class="btn sm" id="cepci-add">
+          <option value="">Add another year&hellip;</option></select>
+        <button class="btn sm ghost" id="cepci-reset"
+                title="Drop every value you have set and go back to the published series">
+          Reset all to published</button>
+      </div>
+      <div class="msg note" id="cepci-note"></div>
+    </div>
+
+    <div class="card">
+      <h3>Start from an example</h3>
+      <p class="hint">Three complete studies. They illustrate the method — the
+        flowsheet quantities are plausible, not balanced.</p>
+      <div class="row" id="demo-row"></div>
+    </div>
+  </section>
+
+  <!-- 02 EQUIPMENT ----------------------------------------------------- -->
+  <section class="panel" id="p-equipment">
+    <div class="head">
+      <div>
+        <span class="eyebrow">02 &mdash; Equipment</span>
+        <h2>The equipment list</h2>
+        <p>Pick from 42 correlations regressed from DOE/NETL-2002/1169, override any
+           of their parameters, write your own correlation, or enter a vendor price
+           directly. Anything technology-defining will need the last two.
+           <b>Open any row</b> to see and edit every parameter behind its cost,
+           with the catalogue default beside your value. What each parameter
+           means is in <b>Parameter guide</b>, once, rather than repeated under
+           every field.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="margin-bottom:12px">
+        <button class="btn primary" id="btn-add-cat">Add from catalogue</button>
+        <button class="btn" id="btn-add-custom">Add custom correlation</button>
+        <button class="btn" id="btn-add-direct">Add direct cost</button>
+        <span class="spacer"></span>
+        <button class="btn sm ghost" id="btn-param-guide"
+                title="What every parameter behind an equipment cost means">Parameter guide</button>
+        <button class="btn sm ghost" id="btn-eq-expand"
+                title="Open or close the parameter panel on every row">Expand all</button>
+        <label class="row" style="gap:6px;font-size:12.5px;color:var(--muted)"
+               title="Off by default. A correlation used outside its fitted range is an
+                      extrapolation, and teakit records that it was one.">
+          <input type="checkbox" id="f-extrap" data-path="allow_extrapolation"
+                 style="width:auto">
+          Allow extrapolation past the fitted range
+        </label>
+      </div>
+      <div class="tbl-wrap"><table class="t" id="eq-table"></table></div>
+      <div id="eq-empty" class="empty">
+        No equipment yet. Start with the catalogue — search by name or duty.
+      </div>
+    </div>
+
+    <div class="card" id="eq-summary-card" style="display:none">
+      <h3>Equipment summary</h3>
+      <p class="hint">Purchased and already-installed costs are kept apart, because
+        an installed price must not go through the installation factors a second
+        time. Both totals feed the capital ladder separately.</p>
+      <div id="eq-summary"></div>
+    </div>
+
+    <div class="card" id="eq-notes-card" style="display:none">
+      <h3>Notes on the equipment list</h3>
+      <div id="eq-notes"></div>
+    </div>
+  </section>
+
+  <!-- 03 CAPITAL ------------------------------------------------------- -->
+  <section class="panel" id="p-capital">
+    <div class="head">
+      <div>
+        <span class="eyebrow">03 &mdash; Capital</span>
+        <h2>From purchased equipment to total capital</h2>
+        <p>Purchased equipment is typically 15&ndash;30% of what a plant costs. This
+           is the NETL ladder: BEC &rarr; EPCC &rarr; TPC &rarr; TOC &rarr; TASC.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Installation</h3>
+      <p class="hint">How purchased cost becomes installed cost. Items you entered as
+        an installed price skip this step and enter at BEC directly.</p>
+      <div class="grid">
+        <div class="f"><label for="f-inst">Method</label>
+          <select id="f-inst" data-path="capital.installation_method"
+                  data-after="install">
+            <option value="loh">DOE/NETL distributive factors — one factor for the list</option>
+            <option value="type">By equipment type — a factor per kind of machine</option>
+            <option value="lang">Lang factor</option>
+            <option value="factor">Single user-supplied factor</option>
+          </select></div>
+        <div class="f" data-when="loh"><label for="f-service">Service</label>
+          <select id="f-service" data-path="capital.loh_service"
+                  data-after="install"></select></div>
+        <div class="f" data-when="loh"><label for="f-setting">Setting-labour class</label>
+          <select id="f-setting" data-path="capital.loh_setting"
+                  data-after="install"></select></div>
+        <div class="f" data-when="lang"><label for="f-lang">Plant type</label>
+          <select id="f-lang" data-path="capital.lang_type"
+                  data-after="install"></select></div>
+        <div class="f" data-when="factor"><label for="f-instf">Installation factor
+          <span class="u">&times; purchased</span></label>
+          <input type="number" id="f-instf" data-path="capital.installation_factor"
+                 data-after="install" step="0.1">
+          <span class="note">2.5&ndash;4 is the usual range for a fluid-processing
+            plant. 1.0 would mean no bulk material and no construction labour.</span></div>
+      </div>
+      <!-- Whichever method is selected, it comes to a number. Showing it is
+           the difference between a factor you chose and a factor you inherited
+           without ever seeing. -->
+      <div class="msg note" id="inst-note"></div>
+
+      <!-- Only for the per-type method: one row per kind of machine actually
+           in the equipment list, with the sourced default beside anything you
+           have changed. -->
+      <div id="inst-types" data-when="type" style="display:none">
+        <h4 class="sub-h">Factor by equipment type</h4>
+        <p class="hint">Every kind of machine in the equipment list, with the
+          factor DOE/NETL-2002/1169 gives it &mdash; the bulk material and
+          labour for the service that kind of machine sits in, plus the labour
+          to set it. Type over any of them. An item can also carry its own
+          factor, on the item, when one machine is genuinely unlike the rest
+          of its type.</p>
+        <div class="tbl-wrap"><table class="t" id="inst-type-table"></table></div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn sm ghost" id="inst-type-reset"
+                  title="Drop every factor you have set and go back to the published values">
+            Reset all to published</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Contingency and EPC</h3>
+      <p class="hint">Process contingency covers technology immaturity, project
+        contingency covers estimate immaturity. They are not interchangeable.</p>
+      <div class="grid">
+        <div class="f"><label for="f-epc">EPC services <span class="u">% of BEC</span></label>
+          <input type="number" id="f-epc" data-path="capital.epc_fee_frac" data-pct step="0.5">
+          <span class="note">NETL uses 15&ndash;20%.</span></div>
+        <div class="f"><label for="f-proc">Process contingency <span class="u">% of BEC</span></label>
+          <input type="number" id="f-proc" data-path="capital.process_contingency_frac" data-pct step="1">
+          <select id="f-proc-band" class="btn sm" style="margin-top:5px"></select></div>
+        <div class="f"><label for="f-proj">Project contingency <span class="u">%</span></label>
+          <input type="number" id="f-proj" data-path="capital.project_contingency_frac" data-pct step="1">
+          <span class="note">AACE 16R-90: 15&ndash;30% for a budget estimate.</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Owner's costs</h3>
+      <p class="hint">NETL Exhibit 2-4 defaults, as percentages of TPC. Land is
+        the exception: an absolute amount, in dollars, that is not depreciated.</p>
+      <div class="grid">
+        <div class="f"><label for="f-pre">Pre-production <span class="u">% TPC</span></label>
+          <input type="number" id="f-pre" data-path="capital.preproduction_frac_tpc" data-pct step="0.1"></div>
+        <div class="f"><label for="f-spare">Inventory / spares <span class="u">% TPC</span></label>
+          <input type="number" id="f-spare" data-path="capital.spare_parts_frac_tpc" data-pct step="0.1"></div>
+        <div class="f"><label for="f-fin">Financing cost <span class="u">% TPC</span></label>
+          <input type="number" id="f-fin" data-path="capital.financing_frac_tpc" data-pct step="0.1"></div>
+        <div class="f"><label for="f-other">Other owner's costs <span class="u">% TPC</span></label>
+          <input type="number" id="f-other" data-path="capital.other_owners_frac_tpc" data-pct step="0.5"></div>
+        <div class="f"><label for="f-land">Land cost <span class="u">USD</span></label>
+          <input type="number" id="f-land" data-path="capital.land_cost"
+                 data-after="land" step="1000">
+          <span class="note" id="land-note">An amount of money, not an area. Not
+            depreciable, and a DCF run returns it in the final year.</span></div>
+        <div class="f"><label for="f-land-acres">Site area <span class="u">acres</span></label>
+          <input type="number" id="f-land-acres" data-path="capital.land_area_acres"
+                 data-after="landcalc" step="1" placeholder="optional">
+          <span class="note">Fill this in to work the cost out by the acre
+            instead; it overwrites the amount beside it.</span></div>
+        <div class="f"><label for="f-land-rate">Land price <span class="u">USD/acre</span></label>
+          <input type="number" id="f-land-rate" data-path="capital.land_cost_per_acre"
+                 data-after="landcalc" step="100">
+          <span class="note">NETL: $3,000/acre rural &mdash; 300 acres for an IGCC
+            or PC plant, 100 for an NGCC.</span></div>
+        <div class="f"><label for="f-cbasis">Escalation basis</label>
+          <select id="f-cbasis" data-path="capital.basis">
+            <option value="real">Real — no escalation during construction</option>
+            <option value="nominal">Nominal — 3%/yr escalation during construction</option>
+          </select>
+          <span class="note">Sets the TASC/TOC factor.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 OPERATING ----------------------------------------------------- -->
+  <section class="panel" id="p-operating">
+    <div class="head">
+      <div>
+        <span class="eyebrow">04 &mdash; Operating cost</span>
+        <h2>What the plant spends every year</h2>
+        <p>Depreciation and interest are <em>not</em> operating costs — they are
+           handled by the costing method. Putting them here double-counts capital.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Operating time</h3>
+      <p class="hint">Two separate numbers, and every hourly rate is multiplied
+        by both. The hours are how long the plant is available; the capacity
+        factor is how hard it runs while it is. Expressing the same derate in
+        both counts it twice.</p>
+      <div class="grid">
+        <div class="f"><label for="f-preset-op">Preset</label>
+          <select id="f-preset-op"></select>
+          <span class="note" id="op-preset-note"></span></div>
+        <div class="f"><label for="f-hours">Operating hours <span class="u">h/yr</span></label>
+          <input type="number" id="f-hours" data-path="opex.operating_hours"
+                 data-after="optime" step="100"></div>
+        <div class="f"><label for="f-cf">Capacity factor <span class="u">%</span></label>
+          <input type="number" id="f-cf" data-path="opex.capacity_factor"
+                 data-after="optime" data-pct step="1"></div>
+      </div>
+      <!-- What the two fields come to together. The preset names quote a
+           percentage that is the stream factor, not the capacity factor, and
+           without this line there is nothing on screen that says so. -->
+      <div class="msg note" id="op-note"></div>
+    </div>
+
+    <div class="card">
+      <h3>Raw materials, catalysts and chemicals</h3>
+      <p class="hint">Rates are at full production. A per-year line with the rate set
+        to 1 lets you enter an annual lump sum.</p>
+      <div class="tbl-wrap"><table class="t" id="rm-table"></table></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn sm" data-add-stream="raw_materials">Add line</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Utilities</h3>
+      <p class="hint">Prices default to the EIA industrial series for electricity and
+        gas, and to published engineering estimates for the rest. Replace anything
+        that matters with your own tariff.</p>
+
+      <!-- Consumption entered against an equipment item, rolled up here. It is
+           read-only on this panel on purpose: one number, edited in one place,
+           on the item that incurs it. -->
+      <div id="eq-util-rollup"></div>
+
+      <h4 class="sub-h">Plant-level lines</h4>
+      <p class="hint">Consumption that does not belong to one machine — site
+        lighting, HVAC, a flare pilot — or a whole-plant figure you would rather
+        enter as a single line.</p>
+      <div class="tbl-wrap"><table class="t" id="ut-table"></table></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn sm" data-add-stream="utilities">Add line</button>
+        <select class="btn sm" id="ut-quick">
+          <option value="">Add a catalogued utility…</option></select>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Waste and effluent</h3>
+      <div class="tbl-wrap"><table class="t" id="ws-table"></table></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn sm" data-add-stream="waste">Add line</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Labour</h3>
+      <div class="tabs" id="labor-tabs">
+        <button data-mode="rule" aria-selected="true">Operators per shift</button>
+        <button data-mode="plan" aria-selected="false">Staffing plan</button>
+      </div>
+      <div id="labor-rule">
+        <div class="grid">
+          <div class="f"><label for="f-ops">Operators per shift</label>
+            <input type="number" id="f-ops" data-path="opex.labor.operators_per_shift" step="1"></div>
+          <div class="f"><label for="f-cov">Shift coverage</label>
+            <input type="number" id="f-cov" data-path="opex.labor.shift_coverage" step="0.1">
+            <span class="note">Employees per continuously-manned seat. 4.8 typical.</span></div>
+          <div class="f"><label for="f-sal">Operator salary <span class="u">$/yr</span></label>
+            <input type="number" id="f-sal" data-path="opex.labor.operator_salary" step="1000">
+            <span class="note">BLS mean for SOC 51-8091, before burden.</span></div>
+          <div class="f"><label for="f-sup">Supervision <span class="u">% of labour</span></label>
+            <input type="number" id="f-sup" data-path="opex.labor.supervision_frac" data-pct step="1"></div>
+          <div class="f"><label for="f-burden">Payroll burden <span class="u">%</span></label>
+            <input type="number" id="f-burden" data-path="opex.labor.burden_frac" data-pct step="1"></div>
+        </div>
+        <div class="msg note" id="labor-calc"></div>
+      </div>
+      <div id="labor-plan" style="display:none">
+        <div class="tbl-wrap"><table class="t" id="staff-table"></table></div>
+        <div class="row" style="margin-top:10px">
+          <select class="btn sm" id="staff-quick">
+            <option value="">Add a role…</option></select>
+          <button class="btn sm" id="btn-nrel-staff">Load NREL staffing template</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Factored fixed costs</h3>
+      <p class="hint">Pick one convention and name it in your report. Mixing them
+        double-counts overhead.</p>
+      <div class="grid">
+        <div class="f"><label for="f-conv">Convention</label>
+          <select id="f-conv" data-path="opex.convention"></select>
+          <span class="note" id="conv-note"></span></div>
+        <div class="f"><label for="f-maint">Maintenance <span class="u">% of capital</span></label>
+          <input type="number" id="f-maint" data-path="opex.maintenance_frac_capital" data-pct step="0.1"
+                 placeholder="from convention"></div>
+        <div class="f"><label for="f-instax">Property tax + insurance <span class="u">%</span></label>
+          <input type="number" id="f-instax" data-path="opex.insurance_tax_frac_capital" data-pct step="0.1"
+                 placeholder="from convention"></div>
+        <div class="f"><label for="f-oh">Plant overhead <span class="u">% of labour</span></label>
+          <input type="number" id="f-oh" data-path="opex.overhead_frac_labor" data-pct step="5"
+                 placeholder="from convention"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 PRODUCTS ------------------------------------------------------ -->
+  <section class="panel" id="p-products">
+    <div class="head">
+      <div>
+        <span class="eyebrow">05 &mdash; Products</span>
+        <h2>The product slate</h2>
+        <p>Exactly one product is primary and its price is what gets solved for.
+           Everything else is credited or allocated — and which of those you choose
+           can move the answer by a factor of two.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Outputs</h3>
+      <div class="tbl-wrap"><table class="t" id="pr-table"></table></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn sm" id="btn-add-product">Add product</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Allocation</h3>
+      <div class="grid">
+        <div class="f"><label for="f-alloc">Method</label>
+          <select id="f-alloc" data-path="products.method">
+            <option value="byproduct credit">By-product credit — subtract secondary revenue</option>
+            <option value="market value">Market value — split by revenue</option>
+            <option value="mass">Mass — split by tonnes</option>
+            <option value="energy">Energy — split by heating value</option>
+          </select></div>
+        <div class="f"><label for="f-refprice">Reference price for the primary product</label>
+          <input type="number" id="f-refprice" data-path="products.primary_reference_price" step="1"
+                 placeholder="market-value allocation only"></div>
+      </div>
+      <div class="msg note" id="alloc-note"></div>
+    </div>
+  </section>
+
+  <!-- 06 FINANCE ------------------------------------------------------- -->
+  <section class="panel" id="p-finance">
+    <div class="head">
+      <div>
+        <span class="eyebrow">06 &mdash; Finance</span>
+        <h2>Financing, tax and timing</h2>
+        <p>Keep one basis throughout: all real with a real discount rate, or all
+           nominal with escalation. Mixing them is the commonest error in a TEA.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Published basis</h3>
+      <p class="hint">Selecting a preset sets every field below at once, against a
+        citable source.</p>
+      <div class="f" style="max-width:520px"><label for="f-preset">Preset</label>
+        <select id="f-preset"></select>
+        <span class="note" id="preset-note"></span></div>
+    </div>
+
+    <div class="card">
+      <h3>Return and tax</h3>
+      <div class="grid">
+        <div class="f"><label for="f-disc">Discount rate <span class="u">%</span></label>
+          <input type="number" id="f-disc" data-path="finance.discount_rate" data-pct step="0.25"></div>
+        <div class="f"><label for="f-tax">Effective tax rate <span class="u">%</span></label>
+          <input type="number" id="f-tax" data-path="finance.tax_rate" data-pct step="0.5">
+          <select id="f-tax-preset" class="btn sm" style="margin-top:5px"></select></div>
+        <div class="f"><label for="f-dep">MACRS recovery <span class="u">years</span></label>
+          <select id="f-dep" data-path="finance.depreciation_years" data-type="int">
+            <option value="3">3 years</option><option value="5">5 years</option>
+            <option value="7">7 years</option><option value="10">10 years</option>
+            <option value="15">15 years</option><option value="20">20 years</option>
+          </select></div>
+        <div class="f"><label for="f-basis">Basis</label>
+          <select id="f-basis" data-path="finance.basis">
+            <option value="real">Real — constant dollars</option>
+            <option value="nominal">Nominal — as-spent dollars</option>
+          </select></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Timing</h3>
+      <div class="grid">
+        <div class="f"><label for="f-life">Plant life <span class="u">years</span></label>
+          <input type="number" id="f-life" data-path="finance.plant_life_years" data-type="int" step="1"></div>
+        <div class="f"><label for="f-con">Construction <span class="u">years</span></label>
+          <input type="number" id="f-con" data-path="finance.construction_years" data-type="int" step="1"></div>
+        <div class="f"><label for="f-startrev">Start-up year revenue <span class="u">%</span></label>
+          <input type="number" id="f-startrev" data-path="finance.startup_revenue_frac" data-pct step="5"></div>
+        <div class="f"><label for="f-wc">Working capital <span class="u">% of TOC</span></label>
+          <input type="number" id="f-wc" data-path="finance.working_capital_frac" data-pct step="1"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Debt</h3>
+      <p class="hint">Leave debt at zero when the discount rate is already a WACC —
+        modelling both charges for the same debt twice.</p>
+      <div class="grid">
+        <div class="f"><label for="f-debt">Debt fraction <span class="u">%</span></label>
+          <input type="number" id="f-debt" data-path="finance.debt_frac" data-pct step="5"></div>
+        <div class="f"><label for="f-int">Interest rate <span class="u">%</span></label>
+          <input type="number" id="f-int" data-path="finance.debt_interest_rate" data-pct step="0.25"></div>
+        <div class="f"><label for="f-term">Term <span class="u">years</span></label>
+          <input type="number" id="f-term" data-path="finance.debt_term_years" data-type="int" step="1"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 RESULTS ------------------------------------------------------- -->
+  <section class="panel" id="p-results">
+    <div class="head">
+      <div>
+        <span class="eyebrow">07 &mdash; Results</span>
+        <h2>The estimate</h2>
+        <p>Read the basis and the warnings before the number.</p>
+      </div>
+      <button class="btn primary" data-run>Run estimate</button>
+    </div>
+    <div id="results-body">
+      <div class="empty">Run the estimate to see results.</div>
+    </div>
+  </section>
+
+  <!-- 08 CHARTS -------------------------------------------------------- -->
+  <section class="panel" id="p-charts">
+    <div class="head">
+      <div>
+        <span class="eyebrow">08 &mdash; Charts</span>
+        <h2>Where the money goes</h2>
+        <p>Every figure downloads as SVG and appears in the HTML report.</p>
+      </div>
+      <button class="btn primary" data-run>Run estimate</button>
+    </div>
+
+    <div class="card">
+      <h3>Where the utilities go</h3>
+      <p class="hint">Everything else here is about what the plant costs. This is
+        about what it <em>consumes</em>: pick a utility and see which equipment
+        draws it, in the utility's own units, rolled up by item, by plant
+        section or by kind of machine. Consumption entered against an item is
+        what makes this possible &mdash; a plant-level line can only ever appear
+        as one unattributed block.</p>
+      <div class="grid">
+        <div class="f"><label for="f-ud-util">Utility</label>
+          <select id="f-ud-util"></select></div>
+        <div class="f"><label for="f-ud-group">Split by</label>
+          <select id="f-ud-group">
+            <option value="item">Equipment item</option>
+            <option value="section">Plant section</option>
+            <option value="type">Equipment type</option>
+          </select></div>
+        <div class="f"><label for="f-ud-measure">Measure</label>
+          <select id="f-ud-measure">
+            <option value="quantity">Consumption</option>
+            <option value="cost">Annual cost</option>
+          </select></div>
+        <div class="f"><label for="f-ud-kind">Chart type</label>
+          <select id="f-ud-kind">
+            <option value="donut">Donut</option>
+            <option value="bar">Bar</option>
+          </select></div>
+      </div>
+      <div id="ud-out"></div>
+      <div class="tbl-wrap"><table class="t" id="ud-table"></table></div>
+      <div class="msg note" id="ud-note"></div>
+    </div>
+
+    <div class="card">
+      <h3>Build your own</h3>
+      <div class="grid">
+        <div class="f"><label for="f-cc-src">Series</label>
+          <select id="f-cc-src">
+            <option value="equipment_shares">Equipment cost by item</option>
+            <option value="section_shares">Equipment cost by plant section</option>
+            <option value="type_shares">Equipment cost by type</option>
+            <option value="capex_breakdown">Capital cost by element</option>
+            <option value="opex_items">Operating cost — every line</option>
+            <option value="opex_variable">Operating cost — variable only</option>
+            <option value="opex_fixed">Operating cost — fixed only</option>
+            <option value="opex_by_category">Operating cost by category</option>
+            <option value="cost_stack">Levelised cost components</option>
+          </select></div>
+        <div class="f"><label for="f-cc-kind">Chart type</label>
+          <select id="f-cc-kind">
+            <option value="bar">Bar</option>
+            <option value="donut">Donut</option>
+            <option value="waterfall">Waterfall</option>
+          </select></div>
+        <div class="f" style="justify-content:flex-end">
+          <button class="btn" id="btn-cc">Plot</button></div>
+      </div>
+      <div id="cc-out"></div>
+    </div>
+
+    <div id="charts-body"><div class="empty">Run the estimate to see charts.</div></div>
+  </section>
+
+  <!-- 09 SENSITIVITY --------------------------------------------------- -->
+  <section class="panel" id="p-sensitivity">
+    <div class="head">
+      <div>
+        <span class="eyebrow">09 &mdash; Sensitivity</span>
+        <h2>Which assumptions actually drive the answer?</h2>
+        <p>Usually three or four of them. The rest could be wrong by a factor of two
+           without moving the result.</p>
+      </div>
+    </div>
+
+    <div class="tabs" id="sens-tabs">
+      <button data-kind="tornado" aria-selected="true">Tornado</button>
+      <button data-kind="sweep" aria-selected="false">Sweep</button>
+      <button data-kind="monte_carlo" aria-selected="false">Monte Carlo</button>
+      <button data-kind="breakeven" aria-selected="false">Breakeven</button>
+    </div>
+
+    <div class="card">
+      <div class="grid">
+        <div class="f"><label for="f-metric">Metric</label>
+          <select id="f-metric"></select></div>
+        <div class="f" data-sens="sweep breakeven monte_carlo">
+          <label for="f-spath">Parameter</label>
+          <select id="f-spath"></select></div>
+        <div class="f" data-sens="sweep"><label for="f-sn">Points</label>
+          <input type="number" id="f-sn" value="13" step="2" min="3" max="41"></div>
+        <div class="f" data-sens="monte_carlo"><label for="f-mcn">Trials</label>
+          <input type="number" id="f-mcn" value="400" step="100" min="50" max="5000"></div>
+        <div class="f" data-sens="breakeven"><label for="f-target">Target value</label>
+          <input type="number" id="f-target" step="0.01"></div>
+        <div class="f" style="justify-content:flex-end">
+          <button class="btn primary" id="btn-sens">Run</button></div>
+      </div>
+      <p class="hint" id="sens-hint" style="margin:12px 0 0"></p>
+    </div>
+
+    <div class="card" data-sens="tornado" id="tornado-params">
+      <h3>Parameters</h3>
+      <p class="hint">Left blank, teakit picks the discount rate, contingency,
+        capacity factor and your four largest variable-cost lines. Each row
+        shows what the parameter is set to now, and you choose whether its low
+        and high are absolute values or a percentage change from that &mdash;
+        the <b>Range</b> column always shows what the study will actually
+        run.</p>
+      <div id="tp-list"></div>
+      <div class="row" style="margin-top:10px">
+        <select class="btn sm" id="tp-add">
+          <option value="">Add a parameter to the tornado…</option></select>
+        <button class="btn sm ghost" id="tp-clear">Use automatic selection</button>
+      </div>
+    </div>
+
+    <div id="sens-body"></div>
+  </section>
+
+  <!-- INFO ------------------------------------------------------------- -->
+  <section class="panel" id="p-info">
+    <div class="head">
+      <div>
+        <span class="eyebrow">Guide &amp; method</span>
+        <h2>What this application does, and how it gets its numbers</h2>
+        <p>Written for someone who has to defend the estimate to a reviewer.
+           Every option in the interface is explained here, and every equation
+           the last run actually used appears at the bottom with your own
+           numbers in it.</p>
+      </div>
+    </div>
+
+    <div class="tabs" id="info-tabs">
+      <button data-info="guide" aria-selected="true">The manual</button>
+      <button data-info="options" aria-selected="false">Every option explained</button>
+      <button data-info="method" aria-selected="false">This run&rsquo;s calculations</button>
+    </div>
+
+    <div id="info-guide"></div>
+    <div id="info-options" style="display:none"></div>
+    <div id="info-method" style="display:none"></div>
+  </section>
+
+  </main>
+
+  <!-- ===================== title block ===================== -->
+  <aside class="block" aria-label="Result summary">
+    <div class="block-inner">
+      <div class="tb">
+        <div class="tb-hero">
+          <span class="k" id="tb-klabel">Levelised cost</span>
+          <div class="v" id="tb-value">—</div>
+          <span class="un" id="tb-unit">not yet run</span>
+        </div>
+        <div class="tb-row c2" style="border-top:1px solid var(--ink)">
+          <div class="tb-cell"><span class="k">Project</span><span class="v" id="tb-name">—</span></div>
+          <div class="tb-cell"><span class="k">Basis</span><span class="v" id="tb-basis">—</span></div>
+        </div>
+        <div class="tb-row c2">
+          <div class="tb-cell"><span class="k">Method</span><span class="v" id="tb-method">—</span></div>
+          <div class="tb-cell"><span class="k">Location</span><span class="v" id="tb-loc">—</span></div>
+        </div>
+        <div class="tb-row c3">
+          <div class="tb-cell"><span class="k">TOC</span><span class="v" id="tb-toc">—</span></div>
+          <div class="tb-cell"><span class="k">OPEX/yr</span><span class="v" id="tb-opex">—</span></div>
+          <div class="tb-cell"><span class="k">Class</span><span class="v">5&ndash;4</span></div>
+        </div>
+        <div class="rev">
+          <span>Rev <b id="tb-rev">—</b></span>
+          <span class="state" id="tb-state">not run</span>
+        </div>
+      </div>
+
+      <div class="mini" id="tb-stack" style="display:none">
+        <h4>Cost build-up</h4>
+        <table id="tb-stack-t"></table>
+        <div class="bar" id="tb-bar"></div>
+      </div>
+
+      <div class="mini" id="tb-warn"></div>
+
+      <div class="block-actions">
+        <button class="btn primary" data-run>Run estimate</button>
+        <button class="btn" data-export="xlsx"
+                title="A sectioned, colour-coded workbook with live formulas, charts and the method appendix">Excel workbook</button>
+        <div class="row">
+          <button class="btn sm" data-export="html" style="flex:1">HTML report</button>
+          <button class="btn sm" data-export="markdown" style="flex:1">Markdown</button>
+        </div>
+        <div class="row">
+          <button class="btn sm" data-export="json" style="flex:1">Save project</button>
+          <button class="btn sm" id="btn-load" style="flex:1">Open project</button>
+        </div>
+        <div class="row">
+          <button class="btn sm" data-export="equipment_csv" style="flex:1">Equipment CSV</button>
+          <button class="btn sm" data-export="cashflow_csv" style="flex:1">Cash flow CSV</button>
+        </div>
+        <div class="row">
+          <button class="btn sm" data-export="equipment_utility_csv" style="flex:1">Utilities CSV</button>
+          <button class="btn sm" data-export="opex_csv" style="flex:1">Operating cost CSV</button>
+        </div>
+        <input type="file" id="file-in" accept=".json" hidden>
+
+        <!-- Where every one of the buttons above writes to. It is on screen
+             rather than in a menu because "where did my report go?" should
+             never need asking. -->
+        <div class="dest">
+          <div class="dest-head">
+            <span class="dest-k">Saving to</span>
+            <button class="btn xs ghost" id="btn-dest-open"
+                    title="Open this folder in the file manager">Open</button>
+          </div>
+          <button class="dest-path" id="dest-path" type="button"
+                  title="Choose where teakit writes reports, workbooks and projects">
+            Choose a folder…</button>
+          <button class="dest-more" id="btn-files" type="button"
+                  title="Choose the folder and see what is already in it">
+            Report folder &amp; files</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- ===================== catalogue picker ===================== -->
+<dialog id="dlg-cat">
+  <div class="dlg-head">
+    <h3>Equipment catalogue</h3>
+    <input type="search" id="cat-q" placeholder="Search — pump, exchanger, tower…"
+           style="flex:1;max-width:280px;padding:6px 9px;border:1px solid var(--rule);
+                  border-radius:3px;background:var(--sheet)">
+  </div>
+  <div class="dlg-body" id="cat-list"></div>
+  <div class="dlg-foot">
+    <span class="pill" id="cat-count"></span>
+    <span class="spacer" style="flex:1"></span>
+    <button class="btn" data-close>Close</button>
+  </div>
+</dialog>
+
+<!-- A free-text control that suggests rather than restricts. The utility
+     name is a <select> with an escape hatch instead: it decides the unit, the
+     price and the category, so a typo there is expensive. -->
+<!-- The equipment types teakit knows an exponent and an installation factor
+     for. A datalist suggests without restricting: "quench tower" is a real
+     answer, it just brings no published numbers with it. Filled from the
+     library at boot. -->
+<datalist id="equipment-types"></datalist>
+
+<datalist id="param-names">
+  <option value="power"></option><option value="duty"></option>
+  <option value="inlet flow"></option><option value="outlet flow"></option>
+  <option value="heat transfer area"></option><option value="volume"></option>
+  <option value="inlet temperature"></option><option value="outlet temperature"></option>
+  <option value="inlet pressure"></option><option value="outlet pressure"></option>
+  <option value="pressure ratio"></option><option value="efficiency"></option>
+  <option value="number of trays"></option><option value="residence time"></option>
+</datalist>
+
+<!-- ================ the report folder ================ -->
+<dialog id="dlg-files">
+  <div class="dlg-head"><h3>Report folder &amp; files</h3></div>
+  <div class="dlg-body" id="files-body"></div>
+  <div class="dlg-foot">
+    <span class="spacer" style="flex:1"></span>
+    <button class="btn" data-close>Close</button>
+  </div>
+</dialog>
+
+<!-- ============ equipment parameter guide ============ -->
+<dialog id="dlg-params">
+  <div class="dlg-head"><h3>Equipment parameter guide</h3></div>
+  <div class="dlg-body" id="params-body"></div>
+  <div class="dlg-foot">
+    <span class="spacer" style="flex:1"></span>
+    <button class="btn" data-close>Close</button>
+  </div>
+</dialog>
+
+<dialog id="dlg-desc">
+  <div class="dlg-head"><h3 id="desc-title">Correlation</h3></div>
+  <div class="dlg-body" id="desc-body"></div>
+  <div class="dlg-foot"><button class="btn" data-close>Close</button></div>
+</dialog>
+
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>

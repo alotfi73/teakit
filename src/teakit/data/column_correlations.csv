@@ -1,0 +1,7 @@
+column_id,description,exponent_diameter,exponent_stages_or_height,base_diameter_ft,base_stages_or_height,base_cost_1998Q1_USD,valid_diameter_min,valid_diameter_max,valid_2_min,valid_2_max,r_squared,rel_rmse,n_points,source
+column_valve_tray_15psig,"Valve tray distillation column, CS, 15 psig, 650 F, 24 in tray spacing (shell + trays)",1.3874,0.5597,11.07,19.67,231810.0,5.0,20.0,2.0,60.0,0.9758,0.141,44,DOE/NETL-2002/1169 Appendix B
+column_valve_tray_150psig,"Valve tray distillation column, CS, 150 psig, 650 F, 24 in tray spacing",1.677,0.5053,11.07,19.67,333520.0,5.0,20.0,2.0,60.0,0.9783,0.1486,44,DOE/NETL-2002/1169 Appendix B
+column_sieve_tray_15psig,"Sieve tray distillation column, CS, 15 psig, 650 F, 24 in tray spacing",1.3678,0.5535,11.07,19.67,220870.0,5.0,20.0,2.0,60.0,0.9739,0.1446,44,DOE/NETL-2002/1169 Appendix B
+column_sieve_tray_150psig,"Sieve tray distillation column, CS, 150 psig, 650 F, 24 in tray spacing",1.6732,0.4991,11.07,19.67,322620.0,5.0,20.0,2.0,60.0,0.9774,0.1511,44,DOE/NETL-2002/1169 Appendix B
+column_packed_15psig,"Packed absorption column shell, CS, 15 psig, 650 F (packing NOT included)",0.8125,0.3689,2.426,23.28,20987.0,1.0,3.5,8.0,68.0,0.9762,0.0734,27,DOE/NETL-2002/1169 Appendix B
+column_packed_150psig,"Packed absorption column shell, CS, 150 psig, 650 F (packing NOT included)",0.8655,0.3815,2.426,23.28,22913.0,1.0,3.5,8.0,68.0,0.9639,0.095,27,DOE/NETL-2002/1169 Appendix B
