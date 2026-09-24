@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push: { branches: [main] }
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "${{ matrix.python }}" }
+
+      # teakit has no runtime dependencies. Installing it plain, before pytest,
+      # is itself the test that this stays true.
+      - name: Install the package alone
+        run: pip install .
+      - name: Confirm no third-party runtime dependencies were pulled in
+        shell: bash
+        run: |
+          python - <<'PY'
+          import importlib.metadata as md
+          reqs = md.requires("teakit") or []
+          runtime = [r for r in reqs if "extra ==" not in r]
+          assert not runtime, f"teakit grew runtime dependencies: {runtime}"
+          print("no runtime dependencies")
+          PY
+      - name: Import and run a full study from a clean environment
+        run: python -c "import teakit as tea; print(tea.demo('methanol').run().unit_cost)"
+
+      - name: Install test tooling
+        run: pip install pytest pytest-cov ruff
+      - name: Doctests
+        run: python -m pytest --doctest-modules src/teakit -q
+      - name: Acceptance and application tests
+        run: python -m pytest tests -q
+      - name: Lint
+        run: ruff check src tests
+        continue-on-error: true
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install build twine
+      - run: python -m build
+      - run: python -m twine check dist/*
+      - name: Confirm data and interface files are in the wheel
+        run: |
+          python - <<'PY'
+          import glob, zipfile
+          names = zipfile.ZipFile(glob.glob("dist/*.whl")[0]).namelist()
+          need = ["teakit/data/cepci.csv",
+                  "teakit/data/equipment_scaling_factors.csv",
+                  "teakit/app/static/index.html",
+                  "teakit/app/static/app.js",
+                  "teakit/app/static/app.css"]
+          missing = [n for n in need if n not in names]
+          assert not missing, f"missing from wheel: {missing}"
+          print("wheel is complete")
+          PY
+      - uses: actions/upload-artifact@v4
+        with: { name: dist, path: dist/ }
