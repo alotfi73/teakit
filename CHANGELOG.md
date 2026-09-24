@@ -268,6 +268,14 @@ them together silently inflates BEC by the installation factor.
 
 ### Fixed
 
+**The portable `.tar.gz` now ships executable launchers.** Windows has no
+executable bit, so `os.chmod` there is a no-op and a bundle built on Windows
+shipped a `Launch teakit.command` macOS would not open on a double-click and a
+`launch-teakit.sh` Linux refused to run. The mode is now set in the archive
+rather than on disk, so the bundle is the same whichever platform builds it.
+Ownership is zeroed at the same time, so the builder's username no longer
+travels with the download.
+
 - Switching currency relabelled the interface but left every figure in USD,
   including the equipment costs. Currency now re-runs the estimate.
 - The equipment table crushed its columns until the Cost column was pushed off
